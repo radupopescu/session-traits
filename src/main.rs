@@ -1,11 +1,11 @@
-extern crate simplest_session;
+extern crate session_traits;
 
 use std::{cell::RefCell, rc::Rc, sync::mpsc::{sync_channel, Receiver, SyncSender}, thread::spawn};
 
-use simplest_session::{make_request, HandlerProxy, PackagedRequest, Request, RequestHandler};
+use session_traits::{make_request, HandlerProxy, PackagedRequest, Request, RequestHandler};
 
 struct R1 {
-    val: u64,
+    val: i64,
 }
 
 impl Request for R1 {
@@ -31,7 +31,7 @@ struct Handle {
 }
 
 impl Handle {
-    fn make_req1(&self, val: u64) -> f64 {
+    fn make_req1(&self, val: i64) -> f64 {
         make_request(R1 { val }, &self.ch)
     }
 

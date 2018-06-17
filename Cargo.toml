@@ -1,5 +1,5 @@
 [package]
-name = "simplest-session"
+name = "session-traits"
 version = "0.1.0"
 authors = ["Radu Popescu <mail@radupopescu.net>"]
 

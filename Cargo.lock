@@ -1,4 +1,4 @@
 [[package]]
-name = "simplest-session"
+name = "session-traits"
 version = "0.1.0"
 

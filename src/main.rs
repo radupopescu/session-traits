@@ -1,6 +1,9 @@
 extern crate session_traits;
 
-use std::{cell::RefCell, rc::Rc, sync::mpsc::{sync_channel, Receiver, SyncSender}, thread::spawn};
+use std::{cell::RefCell,
+          rc::Rc,
+          sync::mpsc::{channel, Receiver, Sender},
+          thread::{spawn, JoinHandle}};
 
 use session_traits::{make_request, HandlerProxy, PackagedRequest, Request, RequestHandler};
 
@@ -23,11 +26,11 @@ impl Request for R2 {
 struct Store;
 
 struct Engine {
-   _s: Rc<RefCell<Store>>,
+    _s: Rc<RefCell<Store>>,
 }
 
 struct Handle {
-    ch: SyncSender<PackagedRequest<Engine>>,
+    ch: Sender<PackagedRequest<Engine>>,
 }
 
 impl Handle {
@@ -41,20 +44,22 @@ impl Handle {
 }
 
 impl Engine {
-    fn start() -> Handle {
+    fn start() -> (Handle, JoinHandle<()>) {
         let (tx, rx): (
-            SyncSender<PackagedRequest<Self>>,
+            Sender<PackagedRequest<Self>>,
             Receiver<PackagedRequest<Self>>,
-        ) = sync_channel(16);
-        let _ = spawn(move || {
-            let mut engine = Engine { _s: Rc::new(RefCell::new(Store)) };
+        ) = channel();
+        let thread_handle = spawn(move || {
+            let mut engine = Engine {
+                _s: Rc::new(RefCell::new(Store)),
+            };
             println!("Starting engine event loop");
             for request in rx.iter() {
                 request.run_handler(&mut engine);
             }
             println!("Engine event loop finished.");
         });
-        Handle { ch: tx }
+        (Handle { ch: tx }, thread_handle)
     }
 }
 
@@ -71,9 +76,13 @@ impl RequestHandler<R2> for Engine {
 }
 
 fn main() {
-    let hd = Engine::start();
-    let r1 = hd.make_req1(123);
-    println!("R1: {}", r1);
-    let r2 = hd.make_req2("Hello!".to_owned());
-    println!("R2: {}", r2);
+    let th = {
+        let (hd, th) = Engine::start();
+        let r1 = hd.make_req1(123);
+        println!("R1: {}", r1);
+        let r2 = hd.make_req2("Hello!".to_owned());
+        println!("R2: {}", r2);
+        th
+    };
+    let _ = th.join();
 }

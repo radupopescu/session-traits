@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use std::sync::mpsc::{sync_channel, SyncSender};
+use std::sync::mpsc::{channel, Sender};
 
 pub trait Request : Send {
     type Reply: Send;
@@ -22,11 +22,13 @@ pub struct PackagedRequest<H>
     inner: Box<HandlerProxy<Handler = H>>,
 }
 
-pub fn make_request<R, H>(req: R, ch: &SyncSender<PackagedRequest<H>>) -> R::Reply
+pub type RequestChannel<H> = Sender<PackagedRequest<H>>;
+
+pub fn make_request<R, H>(req: R, ch: &RequestChannel<H>) -> R::Reply
 where R: Request + 'static,
       H: RequestHandler<R> + 'static,
 {
-    let (tx, rx) = sync_channel(1);
+    let (tx, rx) = channel();
     let envelope = PackagedRequest {
         inner: Box::new(RequestProxy { req, tx, _hd: PhantomData}),
     };
@@ -40,7 +42,7 @@ where R: Request,
       H: RequestHandler<R>,
 {
     req: R,
-    tx: SyncSender<R::Reply>,
+    tx: Sender<R::Reply>,
     _hd: PhantomData<fn(&mut H) -> R::Reply>,
 }
 

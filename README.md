@@ -1,4 +1,4 @@
-# Simplest-session
+# Session traits
 
 A basic implementation of a statically checked, binary, request/reply session in Rust.
 
